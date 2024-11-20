@@ -1,0 +1,9 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.DS_Store
+CIPN_d14.RMD
+CIPN_d7.RMD
+data/
+data_processed/

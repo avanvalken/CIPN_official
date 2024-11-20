@@ -1,0 +1,1218 @@
+---
+title: "CIPN"
+author: "avanvalken"
+date: "6/29/2021"
+output:
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+    theme: "flatly"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+suppressPackageStartupMessages({
+  library(SummarizedExperiment)
+  library(edgeR)
+  library(sva)
+  library(SingleCellExperiment)
+  library(singleCellTK)
+  library(DESeq2)
+  library(TBSignatureProfiler)
+  library(DT)
+  library(enrichR)
+  library(Rtsne)
+  library(umap)
+  library(ggplot2)
+  library(ComplexHeatmap)
+  library(tidyverse)
+  library(stringi)
+  library(hypeR)
+  library(knitr)
+  library(kableExtra)
+  #library(cutpointr)
+  
+  
+})
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+# Load Data {.tabset}
+Make SE objects for each day
+
+## D7 DRG
+```{r}
+# D7 DRG
+counts <- read.table("data/D07_DRG/count", header = TRUE)
+count_info_d07_drg <- counts[,c(1:6)]
+counts <- counts[,-c(2:6)]
+counts <- column_to_rownames(counts, var = "Geneid")
+
+annot <- read.table("data/D07_DRG/annotation.txt", header = TRUE)
+
+# change colnames to sample names
+colnames(counts) <- 1:16
+
+DRG_d07 <- SummarizedExperiment(assays = as.matrix(counts), 
+                               colData = DataFrame(annot),)
+names(assays(DRG_d07)) <- "counts"
+
+saveRDS(DRG_d07, "data_processed/DRG_d07.RDS")
+
+```
+
+## D7 PAG
+```{r}
+# D7 PAG
+counts <- read.table("data/D07_PAG/count", header = TRUE)
+count_info_d07_pag <- counts[,c(1:6)]
+counts <- counts[,-c(2:6)]
+counts <- column_to_rownames(counts, var = "Geneid")
+
+annot <- read.table("data/D07_PAG/annotation.txt", header = TRUE)
+
+# change colnames to sample names
+colnames(counts) <- annot$sample[-c(28)] #missing sample 28
+
+annot <- annot[-c(28),]
+
+PAG_d07 <- SummarizedExperiment(assays = as.matrix(counts), 
+                               colData = DataFrame(annot),)
+names(assays(PAG_d07)) <- "counts"
+
+saveRDS(PAG_d07, "data_processed/PAG_d07.RDS")
+
+```
+
+## D7 spinal_cord
+```{r}
+# D7 spinal_cord
+counts <- read.table("data/D07_spinal_cord/count", header = TRUE)
+count_info_d07_sc <- counts[,c(1:6)]
+counts <- counts[,-c(2:6)]
+counts <- column_to_rownames(counts, var = "Geneid")
+
+annot <- read.table("data/D07_spinal_cord/annotation.txt", header = TRUE)
+
+# change colnames to sample names
+colnames(counts) <- annot$sample
+
+spinal_cord_d07 <- SummarizedExperiment(assays = as.matrix(counts), 
+                               colData = DataFrame(annot),)
+names(assays(spinal_cord_d07)) <- "counts"
+
+saveRDS(spinal_cord_d07, "data_processed/spinal_cord_d07.RDS")
+```
+
+
+
+
+## D14 DRG
+```{r}
+# D14 DRG
+counts <- read.table("data/D14_DRG/count", header = TRUE)
+count_info_d14_drg <- counts[,c(1:6)]
+counts <- counts[,-c(2:6)]
+counts <- column_to_rownames(counts, var = "Geneid")
+
+annot <- read.table("data/D14_DRG/annotation.txt", header = TRUE)
+
+# change colnames to sample names
+colnames(counts) <- annot$sample
+
+DRG_d14 <- SummarizedExperiment(assays = as.matrix(counts), 
+                               colData = DataFrame(annot),)
+names(assays(DRG_d14)) <- "counts"
+
+saveRDS(DRG_d14, "data_processed/DRG_d14.RDS")
+```
+
+## D14 PAG
+```{r}
+# D14 PAG
+counts <- read.table("data/D14_PAG/count", header = TRUE)
+count_info_d14_pag <- counts[,c(1:6)]
+counts <- counts[,-c(2:6)]
+counts <- column_to_rownames(counts, var = "Geneid")
+
+annot <- read.table("data/D14_PAG/annotation.txt", header = TRUE)
+
+# change colnames to sample names
+colnames(counts) <- annot$sample
+
+
+PAG_d14 <- SummarizedExperiment(assays = as.matrix(counts), 
+                               colData = DataFrame(annot),)
+names(assays(PAG_d14)) <- "counts"
+
+saveRDS(PAG_d14, "data_processed/PAG_d14.RDS")
+
+```
+
+## D14 spinal_cord
+```{r}
+# D14 spinal_cord
+counts <- read.table("data/D14_spinal_cord/count", header = TRUE)
+count_info_d14_sc <- counts[,c(1:6)]
+counts <- counts[,-c(2:6)]
+counts <- column_to_rownames(counts, var = "Geneid")
+
+annot <- read.table("data/D14_spinal_cord/annotation.txt", header = TRUE)
+
+# change colnames to sample names
+colnames(counts) <- annot$sample
+
+spinal_cord_d14 <- SummarizedExperiment(assays = as.matrix(counts), 
+                               colData = DataFrame(annot),)
+names(assays(spinal_cord_d14)) <- "counts"
+
+saveRDS(spinal_cord_d14, "data_processed/spinal_cord_d14.RDS")
+
+```
+
+
+
+
+
+## D28 DRG
+```{r}
+# D28 DRG
+counts <- read.table("data/D28_DRG/count", header = TRUE)
+count_info_d28_drg <- counts[,c(1:6)]
+counts <- counts[,-c(2:6)]
+counts <- column_to_rownames(counts, var = "Geneid")
+
+annot <- read.table("data/D28_DRG/annotation.txt", header = TRUE)
+
+# change colnames to sample names
+colnames(counts) <- annot$sample
+
+DRG_d28 <- SummarizedExperiment(assays = as.matrix(counts), 
+                               colData = DataFrame(annot),)
+names(assays(DRG_d28)) <- "counts"
+
+
+saveRDS(DRG_d28, "data_processed/DRG_d28.RDS")
+
+```
+
+## D28 PAG
+```{r}
+# D28 PAG
+counts <- read.table("data/D28_PAG/count", header = TRUE)
+count_info_d28_pag <- counts[,c(1:6)]
+counts <- counts[,-c(2:6)]
+counts <- column_to_rownames(counts, var = "Geneid")
+
+annot <- read.table("data/D28_PAG/annotation.txt", header = TRUE)
+
+# change colnames to sample names
+colnames(counts) <- annot$sample
+
+
+PAG_d28 <- SummarizedExperiment(assays = as.matrix(counts), 
+                               colData = DataFrame(annot),)
+names(assays(PAG_d28)) <- "counts"
+
+
+saveRDS(PAG_d28, "data_processed/PAG_d28.RDS")
+
+```
+
+## D28 spinal_cord
+```{r}
+# D28 spinal_cord
+counts <- read.table("data/D28_spinal_cord/count", header = TRUE)
+count_info_d28_sc <- counts[,c(1:6)]
+counts <- counts[,-c(2:6)]
+counts <- column_to_rownames(counts, var = "Geneid")
+
+annot <- read.table("data/D28_spinal_cord/annotation.txt", header = TRUE)
+
+# change colnames to sample names
+colnames(counts) <- annot$sample[-c(17, 21, 27)] #P1, P5, R3 missing
+annot <- annot[-c(17,21,27),]
+
+spinal_cord_d28 <- SummarizedExperiment(assays = as.matrix(counts), 
+                               colData = DataFrame(annot),)
+names(assays(spinal_cord_d28)) <- "counts"
+
+
+saveRDS(spinal_cord_d28, "data_processed/spinal_cord_d28.RDS")
+
+```
+
+
+
+# process all indata
+```{r}
+indata <- list.files("data_processed", full.names=T, pattern=".RDS")
+indata <- lapply(indata, readRDS)
+names(indata) <-  list.files("data_processed", full.names=F, pattern=".RDS")
+names(indata) <- gsub(".RDS", "", names(indata))
+
+ 
+#indata  = mkAssay(indata, log = TRUE, counts_to_CPM = TRUE)
+
+# filter low variable reads
+indata <- lapply(indata, function(x){x[apply(assay(x,"counts") != 0, 1, mean)>.2,] })
+
+# make log counts assays
+indata   <- lapply(indata, mkAssay, log = TRUE, counts_to_CPM = TRUE)
+
+saveRDS(indata, "data_processed/se_processed_list/se_list.RDS")
+```
+
+# read processed indata list
+```{r}
+indata.ls <- readRDS("data_processed/se_processed_list/se_list.RDS")
+
+DRG_d07 <- indata.ls$DRG_d07
+DRG_d14 <- indata.ls$DRG_d14
+DRG_d28 <- indata.ls$DRG_d28
+PAG_d07 <- indata.ls$PAG_d07
+PAG_d14 <- indata.ls$PAG_d14
+PAG_d28 <- indata.ls$PAG_d28
+spinal_cord_d07 <- indata.ls$spinal_cord_d07
+spinal_cord_d14 <- indata.ls$spinal_cord_d14
+spinal_cord_d28 <- indata.ls$spinal_cord_d28
+
+```
+
+# Diffex
+## Allgenes
+```{r}
+path <- file.path("outs/diffex/all_diffex_genes")
+dir.create(path)
+
+# list of interactive models
+## tx, control by sex and genotype
+tx_con_sex_geno <- lapply(indata.ls, function(x){
+                    designMat <- model.matrix(~factor(tx)+factor(sex)  + factor(genotype), data=colData(x))
+                    colnames(designMat) <- c("Intercept", "treatment","sex",  "genotype")
+                    fit <- lmFit(assay(x, "log_counts_cpm"), designMat)
+                    
+                    # Difference in expression 
+                    
+                    contrast.matrixNut<- makeContrasts(treatment, levels = designMat)
+                    fitNut <- contrasts.fit(fit,contrast.matrixNut)
+                    fitNut <- eBayes(fitNut)
+                    limmaResNut <- topTable(fitNut, adjust.method = "BH", n = Inf, sort.by = "P")
+                    # return diffex genes
+                    return(limmaResNut[limmaResNut$P.Val <0.05,])})
+subpath <- file.path(path,"tx_control_for_sex_and_genotype")
+dir.create(subpath)
+y=names(tx_con_sex_geno)
+mapply( function(x,y){write.csv(x,file=file.path(subpath, paste0(y,".csv")))},tx_con_sex_geno,y)
+
+
+# genotype, control by tx and sex
+geno_con_sex_tx <- lapply(indata.ls, function(x){
+                    designMat <- model.matrix(~factor(genotype)+factor(sex)  + factor(tx), data=colData(x))
+                    colnames(designMat) <- c("Intercept","genotype","sex",  "treatment" )
+                    fit <- lmFit(assay(x, "log_counts_cpm"), designMat)
+                    
+                    # Difference in expression 
+                    
+                    contrast.matrixNut<- makeContrasts(genotype, levels = designMat)
+                    fitNut <- contrasts.fit(fit,contrast.matrixNut)
+                    fitNut <- eBayes(fitNut)
+                    limmaResNut <- topTable(fitNut, adjust.method = "BH", n = Inf, sort.by = "P")
+                    # return diffex genes
+                    return(limmaResNut[limmaResNut$P.Val <0.05,])})
+
+subpath <- file.path(path,"genotype_control_for_sex_and_tx")
+dir.create(subpath)
+y=names(geno_con_sex_tx)
+mapply( function(x,y){write.csv(x,file=file.path(subpath, paste0(y,".csv")))},geno_con_sex_tx,y)
+
+# interaction of genotype and tx; control by sex
+geno_int_tx_con_sex <- lapply(indata.ls, function(x){
+                    designMat <- model.matrix(~factor(genotype) * factor(tx)+factor(sex), data=colData(x))
+                    colnames(designMat) <- c("Intercept", "genotype","treatment","sex",  "genotype_x_tx")
+                    fit <- lmFit(assay(x, "log_counts_cpm"), designMat)
+                    
+                    # Difference in expression 
+                    
+                    contrast.matrixNut<- makeContrasts(genotype_x_tx, levels = designMat)
+                    fitNut <- contrasts.fit(fit,contrast.matrixNut)
+                    fitNut <- eBayes(fitNut)
+                    limmaResNut <- topTable(fitNut, adjust.method = "BH", n = Inf, sort.by = "P")
+                    # return diffex genes
+                    return(limmaResNut[limmaResNut$P.Val <0.05,])})
+subpath <- file.path(path,"genotype_int_tx_control_for_sex")
+dir.create(subpath)
+y=names(geno_int_tx_con_sex)
+mapply( function(x,y){write.csv(x,file=file.path(subpath, paste0(y,".csv")))},geno_int_tx_con_sex,y)
+
+# subset by genotype (J, N) //indata = indata[,colData(indata)$genotype == "J"]
+tx_con_sex_J_only <-  lapply(indata.ls, function(x){
+                    x=x[,colData(x)$genotype=="J"]
+                    designMat <- model.matrix(~factor(tx)+factor(sex), data=colData(x))
+                    colnames(designMat) <- c("Intercept", "treatment","sex")
+                    fit <- lmFit(assay(x, "log_counts_cpm"), designMat)
+                    
+                    # Difference in expression 
+                    
+                    contrast.matrixNut<- makeContrasts(treatment, levels = designMat)
+                    fitNut <- contrasts.fit(fit,contrast.matrixNut)
+                    fitNut <- eBayes(fitNut)
+                    limmaResNut <- topTable(fitNut, adjust.method = "BH", n = Inf, sort.by = "P")
+                    # return diffex genes
+                    return(limmaResNut[limmaResNut$P.Val <0.05,])})
+
+
+subpath <- file.path(path,"tx_control_for_sex_J_subset")
+dir.create(subpath)
+mapply( function(x,y){write.csv(x,file=file.path(subpath, paste0(y,".csv")))},tx_con_sex_J_only,y)
+
+tx_con_sex_N_only <-  lapply(indata.ls, function(x){
+                    x=x[,colData(x)$genotype=="N"]
+                    designMat <- model.matrix(~factor(tx)+factor(sex), data=colData(x))
+                    colnames(designMat) <- c("Intercept", "treatment","sex")
+                    fit <- lmFit(assay(x, "log_counts_cpm"), designMat)
+                    
+                    # Difference in expression 
+                    
+                    contrast.matrixNut<- makeContrasts(treatment, levels = designMat)
+                    fitNut <- contrasts.fit(fit,contrast.matrixNut)
+                    fitNut <- eBayes(fitNut)
+                    limmaResNut <- topTable(fitNut, adjust.method = "BH", n = Inf, sort.by = "P")
+                    # return diffex genes
+                    return(limmaResNut[limmaResNut$P.Val <0.05,])})
+
+subpath <- file.path(path,"tx_control_for_sex_N_subset")
+dir.create(subpath)
+mapply( function(x,y){write.csv(x,file=file.path(subpath, paste0(y,".csv")))},tx_con_sex_N_only,y)
+
+# subset by tx (PAC, VEH)
+geno_con_sex_VEH_only <-  lapply(indata.ls, function(x){
+                    x=x[,colData(x)$tx=="VEH"]
+                    designMat <- model.matrix(~factor(genotype)+factor(sex), data=colData(x))
+                    colnames(designMat) <- c("Intercept", "genotype","sex")
+                    fit <- lmFit(assay(x, "log_counts_cpm"), designMat)
+                    # Difference in expression 
+                    contrast.matrixNut<- makeContrasts(genotype, levels = designMat)
+                    fitNut <- contrasts.fit(fit,contrast.matrixNut)
+                    fitNut <- eBayes(fitNut)
+                    limmaResNut <- topTable(fitNut, adjust.method = "BH", n = Inf, sort.by = "P")
+                    # return diffex genes
+                    return(limmaResNut[limmaResNut$P.Val <0.05,])})
+
+subpath <- file.path(path,"genotype_control_for_sex_VEH_subset")
+dir.create(subpath)
+mapply( function(x,y){write.csv(x,file=file.path(subpath, paste0(y,".csv")))},geno_con_sex_VEH_only,y)
+
+geno_con_sex_PAC_only <-  lapply(indata.ls, function(x){
+                    x=x[,colData(x)$tx=="PAC"]
+                    designMat <- model.matrix(~factor(genotype)+factor(sex), data=colData(x))
+                    colnames(designMat) <- c("Intercept", "genotype","sex")
+                    fit <- lmFit(assay(x, "log_counts_cpm"), designMat)
+                    
+                    # Difference in expression 
+                    
+                    contrast.matrixNut<- makeContrasts(genotype, levels = designMat)
+                    fitNut <- contrasts.fit(fit,contrast.matrixNut)
+                    fitNut <- eBayes(fitNut)
+                    limmaResNut <- topTable(fitNut, adjust.method = "BH", n = Inf, sort.by = "P")
+                    # return diffex genes
+                    return(limmaResNut[limmaResNut$P.Val <0.05,])})
+subpath <- file.path(path,"genotype_control_for_sex_PAC_subset")
+dir.create(subpath)
+mapply( function(x,y){write.csv(x,file=file.path(subpath, paste0(y,".csv")))},geno_con_sex_PAC_only,y)
+
+
+# subset by sex (M, F)
+geno_con_tx_M_only <-  lapply(indata.ls, function(x){
+                    x=x[,colData(x)$sex=="M"]
+                    designMat <- model.matrix(~factor(genotype)+factor(tx), data=colData(x))
+                    colnames(designMat) <- c("Intercept", "genotype","tx")
+                    fit <- lmFit(assay(x, "log_counts_cpm"), designMat)
+                    
+                    # Difference in expression 
+                    
+                    contrast.matrixNut<- makeContrasts(genotype, levels = designMat)
+                    fitNut <- contrasts.fit(fit,contrast.matrixNut)
+                    fitNut <- eBayes(fitNut)
+                    limmaResNut <- topTable(fitNut, adjust.method = "BH", n = Inf, sort.by = "P")
+                    # return diffex genes
+                    return(limmaResNut[limmaResNut$P.Val <0.05,])})
+subpath <- file.path(path,"genotype_control_for_tx_M_subset")
+dir.create(subpath)
+mapply( function(x,y){write.csv(x,file=file.path(subpath, paste0(y,".csv")))},geno_con_tx_M_only,y)
+
+
+geno_con_tx_F_only <-  lapply(indata.ls, function(x){
+                    x=x[,colData(x)$sex=="F"]
+                    designMat <- model.matrix(~factor(genotype)+factor(tx), data=colData(x))
+                    colnames(designMat) <- c("Intercept", "genotype","tx")
+                    fit <- lmFit(assay(x, "log_counts_cpm"), designMat)
+                    # Difference in expression 
+                    contrast.matrixNut<- makeContrasts(genotype, levels = designMat)
+                    fitNut <- contrasts.fit(fit,contrast.matrixNut)
+                    fitNut <- eBayes(fitNut)
+                    limmaResNut <- topTable(fitNut, adjust.method = "BH", n = Inf, sort.by = "P")
+                    # return diffex genes
+                    return(limmaResNut[limmaResNut$P.Val <0.05,])})
+subpath <- file.path(path,"genotype_control_for_tx_F_subset")
+dir.create(subpath)
+mapply( function(x,y){write.csv(x,file=file.path(subpath, paste0(y,".csv")))},geno_con_tx_F_only,y)
+
+# subset by sex, interactive model
+geno_int_tx_M_only <- lapply(indata.ls, function(x){
+                    x=x[,colData(x)$sex=="M"]
+                    designMat <- model.matrix(~factor(genotype) * factor(tx), data=colData(x))
+                    colnames(designMat) <- c("Intercept","genotype", "treatment",  "genotype_x_tx")
+                    fit <- lmFit(assay(x, "log_counts_cpm"), designMat)
+                    
+                    # Difference in expression 
+                    
+                    contrast.matrixNut<- makeContrasts(genotype_x_tx, levels = designMat)
+                    fitNut <- contrasts.fit(fit,contrast.matrixNut)
+                    fitNut <- eBayes(fitNut)
+                    limmaResNut <- topTable(fitNut, adjust.method = "BH", n = Inf, sort.by = "P")
+                    # return diffex genes
+                    return(limmaResNut[limmaResNut$P.Val <0.05,])})
+subpath <- file.path(path,"genotype_int_tx_F_subset")
+dir.create(subpath)
+mapply( function(x,y){write.csv(x,file=file.path(subpath, paste0(y,".csv")))},geno_int_tx_M_only,y)
+
+geno_int_tx_F_only <- lapply(indata.ls, function(x){
+                    x=x[,colData(x)$sex=="F"]
+                    designMat <- model.matrix(~factor(genotype) * factor(tx), data=colData(x))
+                    colnames(designMat) <- c("Intercept","genotype", "treatment",  "genotype_x_tx")
+                    fit <- lmFit(assay(x, "log_counts_cpm"), designMat)
+                    # Difference in expression 
+                    contrast.matrixNut<- makeContrasts(genotype_x_tx, levels = designMat)
+                    fitNut <- contrasts.fit(fit,contrast.matrixNut)
+                    fitNut <- eBayes(fitNut)
+                    limmaResNut <- topTable(fitNut, adjust.method = "BH", n = Inf, sort.by = "P")
+                    # return diffex genes
+                    return(limmaResNut[limmaResNut$P.Val <0.05,])})
+subpath <- file.path(path,"genotype_int_tx_M_subset")
+dir.create(subpath)
+mapply( function(x,y){write.csv(x,file=file.path(subpath, paste0(y,".csv")))},geno_int_tx_F_only,y)
+
+# list of models diffex outputs
+alldx <- list("tx_con_sex_geno"=tx_con_sex_geno,
+              "geno_con_sex_tx"=geno_con_sex_tx,
+              "geno_int_tx_con_sex"=geno_int_tx_con_sex,
+              "tx_con_sex_J_only"=tx_con_sex_J_only,
+              "tx_con_sex_N_only"=tx_con_sex_N_only,
+              "geno_con_sex_VEH_only"=geno_con_sex_VEH_only,
+              "geno_con_sex_PAC_only"=geno_con_sex_PAC_only,
+              "geno_con_tx_M_only"=geno_con_tx_M_only,
+              "geno_con_tx_F_only"=geno_con_tx_F_only,
+              "geno_int_tx_M_only"=geno_int_tx_M_only,
+              "geno_int_tx_F_only"=geno_int_tx_F_only) 
+```
+
+## filter ch1 genes
+```{r}
+count_info <- count_info_d07_drg
+ch1 <- count_info[grep("1", count_info$Chr),]
+ch1 <- ch1[-grep("10", ch1$Chr),]
+ch1 <- ch1[-grep("11", ch1$Chr),]
+ch1 <- ch1[-grep("12", ch1$Chr),]
+ch1 <- ch1[-grep("13", ch1$Chr),]
+ch1 <- ch1[-grep("14", ch1$Chr),]
+ch1 <- ch1[-grep("15", ch1$Chr),]
+ch1 <- ch1[-grep("16", ch1$Chr),]
+ch1 <- ch1[-grep("17", ch1$Chr),]
+ch1 <- ch1[-grep("18", ch1$Chr),]
+ch1 <- ch1[-grep("19", ch1$Chr),]
+ch1 <- ch1[-grep("G", ch1$Chr),]
+ch1 <- ch1[-grep("J", ch1$Chr),]
+
+# get the interval 40-80Mb
+ch1 <- separate(ch1, Start, into = "x", sep = ";", remove = F, extra="drop", fill="right")
+ch1$x <- as.numeric(ch1$x)
+
+ch1 <- separate(ch1, End, into = "y", sep = ";", remove = F, extra="drop", fill="left")
+ch1$y <- as.numeric(ch1$y)
+
+ch1_int <- ch1[ch1$x>38000000,]
+ch1_int <- ch1_int[ch1_int$y<82000000,]
+
+ch1_int_char <- ch1_int$Geneid
+
+```
+
+## filter
+```{r}
+
+ch1_int_filtered <- alldx %>%  modify_depth(2, \(x) x[rownames(x) %in% ch1_int_char, ])
+
+```
+
+## save
+```{r}
+path <- file.path("outs/diffex/chromosome_1_interval_genes")
+dir.create(path)
+
+
+p.ls <- map(names(ch1_int_filtered), \(x) file.path(path, x))
+
+sapply(p.ls, dir.create)
+y <- names(ch1_int_filtered$tx_con_sex_geno)
+
+for(i in seq_along(p.ls)) {
+     subpath <- file.path(p.ls[[i]])
+mapply(function(x,y)write.csv(x, file=file.path(subpath, paste0(y,".csv"))), ch1_int_filtered[[i]], y)
+
+}
+
+```
+
+
+
+
+## filter ch14 genes
+```{r}
+ch14 <- count_info[grep("14$", count_info$Chr),]
+# get the interval 100 b to end
+ch14_int <- separate(ch14, Start, into = "x", sep = ";", remove = F, extra="drop", fill="right")
+ch14_int$x <- as.numeric(ch14_int$x)
+
+
+
+ch14_int <- ch14_int[ch14_int$x>97500000,]
+
+ch14_int_char <- ch14_int$Geneid
+
+ch14_int_filtered <- alldx %>%  modify_depth(2, \(x) x[rownames(x) %in% ch14_int_char, ])
+
+```
+
+
+## SAVE
+```{r}
+path <- file.path("outs/diffex/chromosome_14_interval_genes")
+dir.create(path)
+
+
+p.ls <- map(names(ch14_int_filtered), \(x) file.path(path, x))
+
+sapply(p.ls, dir.create)
+y <- names(ch14_int_filtered$tx_con_sex_geno)
+
+for(i in seq_along(p.ls)) {
+     subpath <- file.path(p.ls[[i]])
+mapply(function(x,y)write.csv(x, file=file.path(subpath, paste0(y,".csv"))), ch14_int_filtered[[i]], y)
+
+}
+```
+
+
+
+
+# D7 Analysis {.tabset}
+## D7 DRG {.tabset}
+### Dimension Reduction {.tabset}
+#### PCA {.tabset}
+```{r}
+indata <- indata.ls$DRG_d07
+
+indata_tmp <- SummarizedExperiment(assays=list(counts=assays(indata)$log_counts_cpm),
+                     colData = colData(indata))
+
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "sex"))
+
+
+```
+```{r}
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "genotype"))
+
+```
+
+#### tSNE {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+set.seed(1)
+tsne_out <- Rtsne(t(assay(indata,assay_type)), check_duplicates = FALSE, pca = TRUE, perplexity=5, theta=0.5, dims=2) # why does it say perplexity is too large? Changed from 10 to 5
+
+embedding <- as.data.frame(tsne_out$Y)
+embedding$Class <- (indata$tx )
+embedding$sex <- indata$sex
+embedding$genotype <- indata$genotype
+
+
+g <- ggplot(embedding, 
+            aes(x=V1, y=V2, color=Class, shape = sex, size = genotype), label = colnames(assay(indata,assay_type))) + 
+  geom_point(size=1.5) + 
+  xlab("T-SNE 1") + 
+  ylab("T-SNE 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("TSNE Plot") 
+
+plot(g)
+```
+
+#### UMAP {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+set.seed(1)
+umap_out <- umap(t(assay(indata,assay_type)))
+
+embedding <- as.data.frame(umap_out$layout)
+embedding$Class <- as.factor(indata$tx)
+embedding$sex <- as.factor(indata$sex)
+embedding$genotype <- as.factor(indata$genotype)
+
+g <- ggplot(embedding, aes(x=V1, y=V2, color=Class, shape = sex, label = colnames(assay(indata,assay_type)))) + 
+  geom_point(size=1.5) + 
+  xlab("UMAP 1") + 
+  ylab("UMAP 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("UMAP Plot")
+
+plot(g)
+```
+
+
+
+## D7 PAG {.tabset}
+### Dimension Reduction {.tabset}
+#### PCA {.tabset}
+```{r}
+indata <- PAG_d07
+
+indata_tmp <- SummarizedExperiment(assays=list(counts=assays(indata)$log_counts_cpm),
+                     colData = colData(indata))
+
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "sex"))
+
+
+```
+```{r}
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "genotype"))
+
+```
+
+#### tSNE {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+set.seed(1)
+tsne_out <- Rtsne(t(assay(indata,assay_type)), check_duplicates = FALSE, pca = TRUE, perplexity=5, theta=0.5, dims=2) # why does it say perplexity is too large? Changed from 10 to 5
+
+embedding <- as.data.frame(tsne_out$Y)
+embedding$Class <- (indata$tx )
+embedding$sex <- indata$sex
+embedding$genotype <- indata$genotype
+
+
+g <- ggplot(embedding, 
+            aes(x=V1, y=V2, color=Class, shape = sex, size = genotype), label = colnames(assay(indata,assay_type))) + 
+  geom_point(size=1.5) + 
+  xlab("T-SNE 1") + 
+  ylab("T-SNE 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("TSNE Plot") 
+
+plot(g)
+```
+
+#### UMAP {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+set.seed(1)
+umap_out <- umap(t(assay(indata,assay_type)))
+
+embedding <- as.data.frame(umap_out$layout)
+embedding$Class <- as.factor(indata$tx)
+embedding$sex <- as.factor(indata$sex)
+embedding$genotype <- as.factor(indata$genotype)
+
+g <- ggplot(embedding, aes(x=V1, y=V2, color=Class, shape = sex, label = colnames(assay(indata,assay_type)))) + 
+  geom_point(size=1.5) + 
+  xlab("UMAP 1") + 
+  ylab("UMAP 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("UMAP Plot")
+
+plot(g)
+```
+
+
+
+## D7 Spinal cord {.tabset}
+### Dimension Reduction {.tabset}
+#### PCA {.tabset}
+```{r}
+indata <- spinal_cord_d07
+
+indata_tmp <- SummarizedExperiment(assays=list(counts=assays(indata)$log_counts_cpm),
+                     colData = colData(indata))
+
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "sex"))
+
+
+```
+```{r}
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "genotype"))
+
+```
+
+#### tSNE {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+set.seed(1)
+tsne_out <- Rtsne(t(assay(indata,assay_type)), check_duplicates = FALSE, pca = TRUE, perplexity=5, theta=0.5, dims=2) # why does it say perplexity is too large? Changed from 10 to 5
+
+embedding <- as.data.frame(tsne_out$Y)
+embedding$Class <- (indata$tx )
+embedding$sex <- indata$sex
+embedding$genotype <- indata$genotype
+
+
+g <- ggplot(embedding, 
+            aes(x=V1, y=V2, color=Class, shape = sex, size = genotype), label = colnames(assay(indata,assay_type))) + 
+  geom_point(size=1.5) + 
+  xlab("T-SNE 1") + 
+  ylab("T-SNE 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("TSNE Plot") 
+
+plot(g)
+```
+
+#### UMAP {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+set.seed(1)
+umap_out <- umap(t(assay(indata,assay_type)))
+
+embedding <- as.data.frame(umap_out$layout)
+embedding$Class <- as.factor(indata$tx)
+embedding$sex <- as.factor(indata$sex)
+embedding$genotype <- as.factor(indata$genotype)
+
+g <- ggplot(embedding, aes(x=V1, y=V2, color=Class, shape = sex, label = colnames(assay(indata,assay_type)))) + 
+  geom_point(size=1.5) + 
+  xlab("UMAP 1") + 
+  ylab("UMAP 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("UMAP Plot")
+
+plot(g)
+```
+
+
+
+# D14 Analysis {.tabset}
+## D14 DRG {.tabset}
+### Dimension Reduction {.tabset}
+#### PCA {.tabset}
+```{r}
+indata <- DRG_d14
+
+indata_tmp <- SummarizedExperiment(assays=list(counts=assays(indata)$log_counts_cpm),
+                     colData = colData(indata))
+
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "sex"))
+
+
+```
+```{r}
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "genotype"))
+
+```
+
+#### tSNE {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+set.seed(1)
+tsne_out <- Rtsne(t(assay(indata,assay_type)), check_duplicates = FALSE, pca = TRUE, perplexity=5, theta=0.5, dims=2) # why does it say perplexity is too large? Changed from 10 to 5
+
+embedding <- as.data.frame(tsne_out$Y)
+embedding$Class <- (indata$tx )
+embedding$sex <- indata$sex
+embedding$genotype <- indata$genotype
+
+
+g <- ggplot(embedding, 
+            aes(x=V1, y=V2, color=Class, shape = sex, size = genotype), label = colnames(assay(indata,assay_type))) + 
+  geom_point(size=1.5) + 
+  xlab("T-SNE 1") + 
+  ylab("T-SNE 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("TSNE Plot") 
+
+plot(g)
+```
+
+#### UMAP {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+set.seed(1)
+umap_out <- umap(t(assay(indata,assay_type)))
+
+embedding <- as.data.frame(umap_out$layout)
+embedding$Class <- as.factor(indata$tx)
+embedding$sex <- as.factor(indata$sex)
+embedding$genotype <- as.factor(indata$genotype)
+
+g <- ggplot(embedding, aes(x=V1, y=V2, color=Class, shape = sex, label = colnames(assay(indata,assay_type)))) + 
+  geom_point(size=1.5) + 
+  xlab("UMAP 1") + 
+  ylab("UMAP 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("UMAP Plot")
+
+plot(g)
+```
+
+
+
+## D14 PAG {.tabset}
+### Dimension Reduction {.tabset}
+#### PCA {.tabset}
+```{r}
+indata <- PAG_d14
+
+indata_tmp <- SummarizedExperiment(assays=list(counts=assays(indata)$log_counts_cpm),
+                     colData = colData(indata))
+
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "sex"))
+
+
+```
+```{r}
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "genotype"))
+
+```
+
+#### tSNE {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+set.seed(1)
+tsne_out <- Rtsne(t(assay(indata,assay_type)), check_duplicates = FALSE, pca = TRUE, perplexity=5, theta=0.5, dims=2) # why does it say perplexity is too large? Changed from 10 to 5
+
+embedding <- as.data.frame(tsne_out$Y)
+embedding$Class <- (indata$tx )
+embedding$sex <- indata$sex
+embedding$genotype <- indata$genotype
+
+
+g <- ggplot(embedding, 
+            aes(x=V1, y=V2, color=Class, shape = sex, size = genotype), label = colnames(assay(indata,assay_type))) + 
+  geom_point(size=1.5) + 
+  xlab("T-SNE 1") + 
+  ylab("T-SNE 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("TSNE Plot") 
+
+plot(g)
+```
+
+#### UMAP {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+set.seed(1)
+umap_out <- umap(t(assay(indata,assay_type)))
+
+embedding <- as.data.frame(umap_out$layout)
+embedding$Class <- as.factor(indata$tx)
+embedding$sex <- as.factor(indata$sex)
+embedding$genotype <- as.factor(indata$genotype)
+
+g <- ggplot(embedding, aes(x=V1, y=V2, color=Class, shape = sex, label = colnames(assay(indata,assay_type)))) + 
+  geom_point(size=1.5) + 
+  xlab("UMAP 1") + 
+  ylab("UMAP 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("UMAP Plot")
+
+plot(g)
+```
+
+
+
+## D14 Spinal cord {.tabset}
+### Dimension Reduction {.tabset}
+#### PCA {.tabset}
+```{r}
+indata <- spinal_cord_d14
+
+indata_tmp <- SummarizedExperiment(assays=list(counts=assays(indata)$log_counts_cpm),
+                     colData = colData(indata))
+
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "sex"))
+
+
+```
+```{r}
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "genotype"))
+
+```
+
+#### tSNE {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+set.seed(1)
+tsne_out <- Rtsne(t(assay(indata,assay_type)), check_duplicates = FALSE, pca = TRUE, perplexity=5, theta=0.5, dims=2) # why does it say perplexity is too large? Changed from 10 to 5
+
+embedding <- as.data.frame(tsne_out$Y)
+embedding$Class <- (indata$tx )
+embedding$sex <- indata$sex
+embedding$genotype <- indata$genotype
+
+
+g <- ggplot(embedding, 
+            aes(x=V1, y=V2, color=Class, shape = sex, size = genotype), label = colnames(assay(indata,assay_type))) + 
+  geom_point(size=1.5) + 
+  xlab("T-SNE 1") + 
+  ylab("T-SNE 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("TSNE Plot") 
+
+plot(g)
+```
+
+#### UMAP {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+set.seed(1)
+umap_out <- umap(t(assay(indata,assay_type)))
+
+embedding <- as.data.frame(umap_out$layout)
+embedding$Class <- as.factor(indata$tx)
+embedding$sex <- as.factor(indata$sex)
+embedding$genotype <- as.factor(indata$genotype)
+
+g <- ggplot(embedding, aes(x=V1, y=V2, color=Class, shape = sex, label = colnames(assay(indata,assay_type)))) + 
+  geom_point(size=1.5) + 
+  xlab("UMAP 1") + 
+  ylab("UMAP 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("UMAP Plot")
+
+plot(g)
+```
+
+
+
+# D28 Analysis {.tabset}
+## D28 DRG {.tabset}
+### D28 Dimension Reduction {.tabset}
+#### PCA {.tabset}
+```{r}
+indata <- DRG_d28
+
+indata_tmp <- SummarizedExperiment(assays=list(counts=assays(indata)$log_counts_cpm),
+                     colData = colData(indata))
+
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "sex"))
+
+
+```
+```{r}
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "genotype"))
+
+```
+
+#### tSNE {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+set.seed(1)
+tsne_out <- Rtsne(t(assay(indata,assay_type)), check_duplicates = FALSE, pca = TRUE, perplexity=3, theta=0.5, dims=2) # why does it say perplexity is too large? Changed from 10 to 5
+
+embedding <- as.data.frame(tsne_out$Y)
+embedding$Class <- (indata$tx )
+embedding$sex <- indata$sex
+embedding$genotype <- indata$genotype
+
+
+g <- ggplot(embedding, 
+            aes(x=V1, y=V2, color=Class, shape = sex, size = genotype), label = colnames(assay(indata,assay_type))) + 
+  geom_point(size=1.5) + 
+  xlab("T-SNE 1") + 
+  ylab("T-SNE 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("TSNE Plot") 
+
+plot(g)
+```
+
+#### UMAP {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+umap.other <- umap.defaults
+umap.other$n_neighbors <- 12
+
+set.seed(1)
+umap_out <- umap(t(assay(indata,assay_type)), config = umap.other)
+
+embedding <- as.data.frame(umap_out$layout)
+embedding$Class <- as.factor(indata$tx)
+embedding$sex <- as.factor(indata$sex)
+embedding$genotype <- as.factor(indata$genotype)
+
+g <- ggplot(embedding, aes(x=V1, y=V2, color=Class, shape = sex, label = colnames(assay(indata,assay_type)))) + 
+  geom_point(size=1.5) + 
+  xlab("UMAP 1") + 
+  ylab("UMAP 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("UMAP Plot")
+
+plot(g)
+```
+
+
+
+## PAG {.tabset}
+### Dimension Reduction {.tabset}
+#### PCA {.tabset}
+```{r}
+indata <- PAG_d28
+
+indata_tmp <- SummarizedExperiment(assays=list(counts=assays(indata)$log_counts_cpm),
+                     colData = colData(indata))
+
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "sex"))
+
+
+```
+```{r}
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "genotype"))
+
+```
+
+#### tSNE {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+set.seed(1)
+tsne_out <- Rtsne(t(assay(indata,assay_type)), check_duplicates = FALSE, pca = TRUE, perplexity=5, theta=0.5, dims=2) # why does it say perplexity is too large? Changed from 10 to 5
+
+embedding <- as.data.frame(tsne_out$Y)
+embedding$Class <- (indata$tx )
+embedding$sex <- indata$sex
+embedding$genotype <- indata$genotype
+
+
+g <- ggplot(embedding, 
+            aes(x=V1, y=V2, color=Class, shape = sex, size = genotype), label = colnames(assay(indata,assay_type))) + 
+  geom_point(size=1.5) + 
+  xlab("T-SNE 1") + 
+  ylab("T-SNE 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("TSNE Plot") 
+
+plot(g)
+```
+
+#### UMAP {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+set.seed(1)
+umap_out <- umap(t(assay(indata,assay_type)))
+
+embedding <- as.data.frame(umap_out$layout)
+embedding$Class <- as.factor(indata$tx)
+embedding$sex <- as.factor(indata$sex)
+embedding$genotype <- as.factor(indata$genotype)
+
+g <- ggplot(embedding, aes(x=V1, y=V2, color=Class, shape = sex, label = colnames(assay(indata,assay_type)))) + 
+  geom_point(size=1.5) + 
+  xlab("UMAP 1") + 
+  ylab("UMAP 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("UMAP Plot")
+
+plot(g)
+```
+
+
+
+## Spinal cord {.tabset}
+### Dimension Reduction {.tabset}
+#### PCA {.tabset}
+```{r}
+indata <- spinal_cord_d28
+
+indata_tmp <- SummarizedExperiment(assays=list(counts=assays(indata)$log_counts_cpm),
+                     colData = colData(indata))
+
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "sex"))
+
+
+```
+```{r}
+plotPCA(DESeqTransform(indata_tmp), intgroup = c("tx",  "genotype"))
+
+```
+
+#### tSNE {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+set.seed(1)
+tsne_out <- Rtsne(t(assay(indata,assay_type)), check_duplicates = FALSE, pca = TRUE, perplexity=5, theta=0.5, dims=2) # why does it say perplexity is too large? Changed from 10 to 5
+
+embedding <- as.data.frame(tsne_out$Y)
+embedding$Class <- (indata$tx )
+embedding$sex <- indata$sex
+embedding$genotype <- indata$genotype
+
+
+g <- ggplot(embedding, 
+            aes(x=V1, y=V2, color=Class, shape = sex, size = genotype), label = colnames(assay(indata,assay_type))) + 
+  geom_point(size=1.5) + 
+  xlab("T-SNE 1") + 
+  ylab("T-SNE 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("TSNE Plot") 
+
+plot(g)
+```
+
+#### UMAP {.tabset}
+```{r}
+assay_type = "log_counts_cpm"
+
+set.seed(1)
+umap_out <- umap(t(assay(indata,assay_type)))
+
+embedding <- as.data.frame(umap_out$layout)
+embedding$Class <- as.factor(indata$tx)
+embedding$sex <- as.factor(indata$sex)
+embedding$genotype <- as.factor(indata$genotype)
+
+g <- ggplot(embedding, aes(x=V1, y=V2, color=Class, shape = sex, label = colnames(assay(indata,assay_type)))) + 
+  geom_point(size=1.5) + 
+  xlab("UMAP 1") + 
+  ylab("UMAP 2") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("UMAP Plot")
+
+plot(g)
+```
+
+
+
+# Session
+```{r }
+sessionInfo()
+```
+
+
